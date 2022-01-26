@@ -1,0 +1,10 @@
+﻿  Cpp3D.cpp
+D:\MS Visual Studio\repos\Cpp3D\Cpp3D\Cpp3D.cpp(401,13): warning C4101: “hdcMem”: 未引用的局部变量
+D:\MS Visual Studio\repos\Cpp3D\Cpp3D\Cpp3D.cpp(402,17): warning C4101: “hbmp”: 未引用的局部变量
+D:\MS Visual Studio\repos\Cpp3D\Cpp3D\Cpp3D.cpp(403,16): warning C4101: “bmp”: 未引用的局部变量
+D:\MS Visual Studio\repos\Cpp3D\Cpp3D\Cpp3D.cpp(214,28): warning C4244: “参数”: 从“long double”转换到“int”，可能丢失数据
+D:\MS Visual Studio\repos\Cpp3D\Cpp3D\Cpp3D.cpp(199): message : 在编译 类 模板 成员函数“void Cunity<long double>::ShowOn(Img &)”时
+D:\MS Visual Studio\repos\Cpp3D\Cpp3D\Cpp3D.cpp(420): message : 查看对正在编译的函数 模板 实例化“void Cunity<long double>::ShowOn(Img &)”的引用
+D:\MS Visual Studio\repos\Cpp3D\Cpp3D\Cpp3D.cpp(413): message : 查看对正在编译的 类 模板 实例化“Cunity<long double>”的引用
+D:\MS Visual Studio\repos\Cpp3D\Cpp3D\Cpp3D.cpp(214,20): warning C4244: “参数”: 从“long double”转换到“int”，可能丢失数据
+  Cpp3D.vcxproj -> D:\MS Visual Studio\repos\Cpp3D\x64\Debug\Cpp3D.exe
