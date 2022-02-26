@@ -1,225 +1,17 @@
 ﻿// bitblt.cpp : 定义应用程序的入口点。
 //
+#define _CRT_SECURE_NO_WARNINGS
 #include "framework.h"
+#include<iostream>
 #include "Cpp3D.h"
 #include <cstddef>
 #include <thread>
 #include <algorithm>
 #include <map>
-using namespace std;
-enum class WriteBy { Thread = 1, None = 0 };
-
-class Img {
-
-public:
-    BYTE* g_pBits;
-    HDC MemDC;
-    HBITMAP Bmp, OldBmp;
-    RECT* rect;
-    HDC hdc;
-    int iWidth;
-    int iHeight;
-
-    void ready()
-    {
-        MemDC = ::CreateCompatibleDC(hdc);
-        iWidth = rect->right - rect->left;
-        iHeight = rect->bottom - rect->top;
-        BYTE bmibuf[sizeof(BITMAPINFO) + 256 * sizeof(RGBQUAD)];
-        memset(bmibuf, 0, sizeof(bmibuf));
-        BITMAPINFO* pbmi = (BITMAPINFO*)bmibuf;
-        // BITMAPINFO pbmi;
-        pbmi->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-        pbmi->bmiHeader.biWidth = iWidth;
-        pbmi->bmiHeader.biHeight = iHeight;
-        pbmi->bmiHeader.biPlanes = 1;
-        pbmi->bmiHeader.biBitCount = 24;
-        pbmi->bmiHeader.biCompression = BI_RGB;
-        Bmp = ::CreateDIBSection(MemDC, pbmi, DIB_RGB_COLORS, (void**)&g_pBits, 0, 0);
-        OldBmp = (HBITMAP)::SelectObject(MemDC, Bmp);
-    }
-
-    void show() {
-        BitBlt(hdc, 0, 0, iWidth, iHeight, MemDC, 0, 0, SRCCOPY);
-        SelectObject(MemDC, OldBmp);
-    }
-
-    ~Img() {
-        SelectObject(MemDC, OldBmp);
-        DeleteObject(Bmp);
-        DeleteDC(MemDC);
-    }
-    Img(RECT* re, HDC dc, WriteBy wb = WriteBy::None) {
-        rect = re;
-        hdc = dc;
-        ready();
-        if (wb == WriteBy::Thread) {
-            std::thread SWer([](Img* img) {for (int i = 0; i < 1000; ++i) img->show(); }, this);
-            SWer.detach();
-        }
-    }
-    BYTE* operator ()(int x, int y) {
-        return &(g_pBits[y * iWidth * 3 + x * 3]);
-    }
-};
-
-template<typename T = long double, size_t Len = 3>
-struct Vector {
-    using vec = Vector<T,Len>;
-    T data[Len];
-    T& operator[](size_t at) {
-        return data[at];
-    }
-#pragma region +-* --&
-    vec operator+(vec& v) {
-        vec t;
-        for (size_t i = 0; i < Len; ++i) {
-            t[i] = data[i] + v[i];
-        }
-        return t;
-    }
-    vec operator-(vec& v) {
-        vec t;
-        for (size_t i = 0; i < Len; ++i) {
-            t[i] = data[i] - v[i];
-        }
-        return t;
-    }
-    T operator*(vec& v) {
-        T re = 0;
-        for (size_t i = 0; i < Len; ++i) {
-            re += data[i] * v[i];
-        }
-        this->data[0];
-        return re;
-    }
-#pragma endregion
-#pragma region +-* --&&
-
-    vec operator+(vec&& v) {
-        vec t;
-        for (size_t i = 0; i < Len; ++i) {
-            t[i] = data[i] + v[i];
-        }
-        return t;
-    }
-    vec operator-(vec&& v) {
-        vec t;
-        for (size_t i = 0; i < Len; ++i) {
-            t[i] = data[i] - v[i];
-        }
-        return t;
-    }
-    T operator*(vec&& v) {
-        T re = 0;
-        for (size_t i = 0; i < Len; ++i) {
-            re += data[i] * v[i];
-        }
-        this->data[0];
-        return re;
-    }
-#pragma endregion
-
-    
-    vec operator*(T v) {
-        vec re;
-        for (size_t i = 0; i < Len; ++i) {
-            re[i] = data[i] * v;
-        }
-        this->data[0];
-        return re;
-    }
-
-
-    template<typename JD = long double>
-    JD Length() {
-        JD re = 0;
-        for (size_t i = 0; i < Len; ++i) {
-            re += data[i] * data[i];
-        }
-        this->data[0];
-        auto sadf = sqrtl(re);
-        return sqrtl(re);
-    }
-
-};
-template<typename T = double>
-struct Camera {
-    Camera(T X = 1, T Y = 1, T Z = 1) {
-        x = X, y = Y, z = Z;
-    }
-    T x, y, z;
-};
-
-template<typename T = double>
-class PointSet {
-public:
-    size_t Size = 0;
-    std::map<size_t, Vector<T, 3> > points;
-    bool GetNewPoint(T& x, T& y, T& z, size_t Index) {
-        auto On = points[Index];
-        x = On[0], y = On[1], z = On[2];
-        return Index != points.size();
-    }
-    void SetNewPoint(T x, T y, T z) {
-        points[Size++] = Vector<T, 3>{ x, y, z };
-    }
-
-    bool GetNewPoint(Vector<T, 3>& point, size_t Index) {
-        
-        point = points[Index];
-        return Index < Size;
-    }
-    void SetNewPoint(Vector<T, 3>&& point) {
-        points[Size++] = point;
-    }
-};
-
-namespace exVector {
-    template<typename T, size_t Len>
-    inline T DegOf(Vector<T, Len> a, Vector<T, Len> b) {
-        auto ji = a * b;
-        auto lena = a.Length();
-        auto lenb = b.Length();
-        return acosl(ji/lena/lenb);
-    }
-    template<typename T>
-    constexpr Vector<T, 3> NullVec{ 0,0,0 };
-}using namespace exVector;
-
-template<typename T = double>
-class Cunity {
-public:
-    using Vec = Vector<T, 3>;
-    Vec poi, cam;//O and cam
-    PointSet<T>* data;
-    Cunity(PointSet<T>* Data, Vec&& Cam, Vec&& Poi = Vec{ 0,0,0 }) {
-        data = Data, cam = Cam, poi = Poi;
-    }
-    void ShowOn(Img& img) {
-        auto camlen = cam.Length();
-        Vec tVec = Vec{ 0, 0, 1 };
-        Vec stdvec, point, stdpoi;
-        size_t Index = 0;
-        auto camtim = cam * tVec;
-        long double deg = acosl(camtim / camlen);
-        stdvec = Vec{ cam[0],cam[1],cam[2] - (tanl(deg) + 1) };
-        while (data->GetNewPoint(point, Index++)) {
-            point = point - poi;
-            long double CosR = (cam * point) / (camlen * point.Length());
-            long double R = acosl(CosR);
-            stdpoi = point-cam * (CosR * point.Length()) * (1 / camlen);
-            long double ST = DegOf(stdpoi, stdvec);
-            if(ST==ST)
-            img(100*ST, 100*R)[0] = 255;
-
-        }
-    }
-};
-
-
+#include<cmath>
 #include "framework.h"
 #include "Cpp3D.h"
+#include"3DFramework.hpp"
 #include <cstddef>
 using namespace std;
 #define MAX_LOADSTRING 100
@@ -401,25 +193,38 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         HDC hdcMem;
         HBITMAP hbmp;	//一张位图的句柄
         BITMAP bmp;
-
         hdc = BeginPaint(hWnd, &ps);	//为指定句柄hwnd窗口进行绘画准备工作
-        Img h(new RECT{ 20,20,160,160 }, hdc, WriteBy::None);
+        for (int i = 0; i < 1000; ++i) {
+            int gx = 50, gy = 60,gz=70;
+        Img h(new RECT{ 20,20,1600,700 }, hdc, WriteBy::None);
+            for (int i = 20; i < 1500; ++i)
+               for (int j = 20; j < 480; ++j)
+                    h(i, j,1)[0] = 255, h(i, j,1)[1] = 255, h(i, j,1)[2] = 255;
+        //memset(h.g_pBits, 255, 1000);
+        POINT poi, op; GetCursorPos(&op);
+        while(GetCursorPos(&poi),pow(poi.x-op.x,2)+pow(poi.y-op.y,2)<0)op=poi;
+        
+        double a = poi.x * 0.01, b = poi.y * 0.01;
+        /*
+        for (int ei = 0; ei < 100; ++ei)
+            for (int ej = 0; ej < 100; ++ej)
+                for (int ek = 0; ek < 100; ++ek) {
+                    double i = ei * cos(b) - ek * sin(b), j = ej, k = ek * cos(b) + ei * sin(b);;
+                    double farf = (pow(i - gx, 2) / 100 + pow(j - gy, 2) / 100 + pow(k - gz, 2) / 100 + 0.01);
 
-        PointSet<long double> poi;
-        for (int i = 0; i < 120; i++)
-            for (int j = 0; j < 120; ++j)
-                for (int k = 0; k < 120; ++k)
-                    poi.SetNewPoint(i, j, k);
-        Cunity<long double> cun(&poi, Vector<long double, 3>{150, 150, 100}, Vector<long double, 3>{-150, -150, -100});
-        while(!(GetKeyState(VK_UP))) {
-            POINT po;
-            GetCursorPos(&po);
-            int i = po.x;
-            cun.cam[2] = i;
-            cun.poi[2] = -100;
-            cun.ShowOn(h);
+                    h(i + 80, 100 + j * cos(a) + k * sin(a),2)[0] = ( 6555 / farf) / 2.00;
+                }
+        */
+
+            for (int ei = 0; ei < 100; ++ei)
+                for (int ej = 0; ej < 100; ++ej)
+                    for (int ek = 0; ek < 100; ++ek) {
+                        double i = ei * cos(b) - ek * sin(b), j=ej,k = ek * cos(b) + ei * sin(b);;
+                        //double farf = (pow(i - gx, 2)/100 + pow(j - gy, 2)/100 + pow(k-gz,2)/100+0.01);
+
+                        h(i + 180, 200 + j * cos(a) + k * sin(a))[0] = 255*(ei + ej + ek)/300;;
+                    }
             h.show();
-            memset(h.g_pBits, 0, sizeof(h.g_pBits));
         }
         EndPaint(hWnd, &ps);
 
